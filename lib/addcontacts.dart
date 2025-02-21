@@ -13,24 +13,30 @@ class AddContacts extends StatefulWidget {
 class _AddContactsState extends State<AddContacts> {
   TextEditingController nameController = TextEditingController();
   TextEditingController phoneNumberController = TextEditingController();
-
   Future<String> get _localPath async{
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
   }
-
   Future<void> saveContactsToFile(String name, String phoneNumber) async {
     Map<String, String> contact = {
       "name": name,
       "phoneNumber": phoneNumber
     };
-    String jsonAsString = jsonEncode(contact);
-
-    final file = File("${await _localPath}/contacts.json");
-    await file.writeAsString(jsonAsString, mode: FileMode.append);
+    final file = File("${await _localPath}/contacts_file.json");
+    String fileContent;
+    if (await file.exists()) {
+      fileContent = await file.readAsString();
+    } else {
+      fileContent = '[]';
+    }
+    List<dynamic> contacts = jsonDecode(fileContent);
+    contacts.add(contact);
+    String jsonAsString = jsonEncode(contacts);
+    await file.writeAsString(jsonAsString);
     nameController.clear();
     phoneNumberController.clear();
   }
+
 
   @override
   Widget build(BuildContext context) {

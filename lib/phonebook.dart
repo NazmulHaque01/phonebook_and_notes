@@ -11,12 +11,11 @@ class Phonebook extends StatefulWidget{
 }
 
 class _PhonebookState extends State<Phonebook> {
-  Map<String,dynamic> phonebook = {};
+  // Map<String,dynamic> phonebook = {};
 
   @override
   void initState(){
     super.initState();
-    readFile();
   }
 
   Future<String> get _localPath async{
@@ -24,24 +23,66 @@ class _PhonebookState extends State<Phonebook> {
     return directory.path;
   }
 
-  Future<Map<String, dynamic>> readFile() async {
-    final file = File("${await _localPath}/contacts.json");
-    String contents = await file.readAsString();
-    return jsonDecode(contents);
+  Future<List<Map<String, String>>> readFile() async {
+    final file = File('${await _localPath}/contacts_file.json');
+    if (await file.exists()) {
+      String contents = await file.readAsString();
+      List<dynamic> decodedJson = jsonDecode(contents);
+      return decodedJson.map((item) => Map<String, String>.from(item)).toList();
+    } else {
+      return List.empty();
+    }
+
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return FutureBuilder<List<Map<String, String>>>(
       future: readFile(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+        if (snapshot.connectionState == ConnectionState.done) {
+          if (snapshot.hasError) {
+            return Text('Snapshot has Error: ${snapshot.error}');
+          }
+          final listData = snapshot.data;
+          if (listData != null && listData.isNotEmpty) {
+            return ListView.builder(
+              itemCount: listData.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color.fromARGB(50, 58, 60, 58),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: Offset(0, 3), // changes position of shadow
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      title: Text(
+                        listData[index]['name']!,
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        listData[index]['phoneNumber']!,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          } else {
+            return Center(child: Text('No data available'));
+          }
         } else {
-          phonebook = snapshot.data!;
-          return ListView.builder(itemCount: phonebook.length, itemBuilder: (context, index) { return ListTile(title: Text(phonebook.keys.elementAt(index)), subtitle: Text(phonebook.values.elementAt(index)),);});
+          return CircularProgressIndicator();
         }
       },
     );
